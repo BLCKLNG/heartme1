@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+html, body { margin:0; background:transparent; overflow:hidden; }
+* { box-sizing:border-box; }
+
+:root{
+  --bottom: 120px;
+  --heart-h: 260px;
+  --gap: 40px;
+
+  --title-size: 64px;
+  --name-size: 64px;
+
+  --fade-ms: 420ms;
+  --slide-in: 60px;
+}
+
+@font-face{
+  font-family: "Popeva";
+  src: url("images/Popeva.ttf") format("truetype");
+  font-display: swap;
+}
+
+#wrap{
+  position: fixed;
+  left:0; right:0;
+  bottom: var(--bottom);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+
+/* SHARP GOLD — NO GLOW, NO SHADOW */
+.gold{
+  color: #D4AF37;
+}
+
+#title{
+  font-family: "Popeva","Georgia",serif;
+  font-size: var(--title-size);
+  letter-spacing: 2px;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+}
+
+#row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: var(--gap);
+  min-height: calc(var(--heart-h) + 12px);
+}
+
+#heart{
+  height: var(--heart-h);
+  width:auto;
+  display:block;
+  opacity:0;
+  transform:translateX(calc(var(--slide-in) * -1));
+}
+
+#name{
+  min-width:480px;
+  max-width:800px;
+  white-space: nowrap;
+  overflow:hidden;
+
+  font-family:"Popeva","Georgia",serif;
+  font-size:var(--name-size);
+  letter-spacing:1px;
+  text-transform: uppercase;
+
+  opacity:0;
+  transform:translateX(var(--slide-in));
+  line-height: 1.05;
+}
+
+#name.twoLine{
+  white-space: normal;
+}
+
+/* Enter animations */
+.in #heart{ animation: heartIn var(--fade-ms) forwards; }
+.in #name{  animation: nameIn  var(--fade-ms) forwards; }
+
+@keyframes heartIn { to{opacity:1; transform:translateX(0);} }
+@keyframes nameIn  { to{opacity:1; transform:translateX(0);} }
+
+/* Exit animations */
+.out #heart, .out #name{
+  opacity:0;
+  transition: opacity var(--fade-ms) ease, transform var(--fade-ms) ease;
+}
+.out #heart{ transform:translateX(calc(var(--slide-in) * -1)); }
+.out #name { transform:translateX(var(--slide-in)); }
+
+@media (max-width:900px){
+  :root{ --heart-h:200px; --title-size:48px; --name-size:48px; }
+  #name{ min-width:320px; }
+}
+</style>
+</head>
+
+<body>
+<div id="wrap">
+  <div id="title" class="gold">TOP MEMBERS</div>
+  <div id="row">
+    <img id="heart" src="images/top.png" alt="heart">
+    <div id="name" class="gold">POPEVA - 46</div>
+  </div>
+</div>
+
+<script>
+const PAGE_MS = 5000;
+const FADE_MS = 420;
+const ASSET_VERSION = 1;
+
+const pages = [
+  { img: "images/top.png", text: "POPEVA - 46" },
+  { img: "images/mid.png", text: "SALVIOR - 37" },
+  { img: "images/mid.png", text: "GHOST RIDER - 33" },
+  { img: "images/mid.png", text: "LINIQ - 30" },
+  { img: "images/low.png", html: "OBERON &<br>VLADI13_12 - 28", twoLine: true }
+];
+
+const wrap  = document.getElementById("wrap");
+const heart = document.getElementById("heart");
+const nameEl = document.getElementById("name");
+
+let idx = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function busted(path, pageIndex){
+  return path + "?v=" + ASSET_VERSION + "&p=" + pageIndex;
+}
+
+function setHeart(path, pageIndex){
+  return new Promise(resolve => {
+    const target = busted(path, pageIndex);
+    heart.onload = () => resolve();
+    heart.onerror = () => resolve();
+    heart.src = target;
+    if (heart.decode) heart.decode().then(resolve).catch(resolve);
+  });
+}
+
+function replayEnter(){
+  wrap.classList.remove("in","out");
+  void wrap.offsetWidth;
+  wrap.classList.add("in");
+}
+
+async function showPage(p, pageIndex){
+  nameEl.classList.toggle("twoLine", !!p.twoLine);
+  if (p.html) nameEl.innerHTML = p.html;
+  else nameEl.textContent = p.text;
+
+  await setHeart(p.img, pageIndex);
+  replayEnter();
+  await sleep(PAGE_MS);
+}
+
+async function cycle(){
+  while(true){
+    await showPage(pages[idx], idx);
+
+    wrap.classList.remove("in");
+    wrap.classList.add("out");
+    await sleep(FADE_MS);
+
+    idx = (idx + 1) % pages.length;
+  }
+}
+cycle();
+</script>
+</body>
+</html>

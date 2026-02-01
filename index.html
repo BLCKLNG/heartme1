@@ -5,180 +5,287 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-html, body { margin:0; background:transparent; overflow:hidden; }
-* { box-sizing:border-box; }
+  html, body { margin:0; background:transparent; overflow:hidden; }
+  * { box-sizing:border-box; }
 
-:root{
-  --bottom: 120px;
-  --heart-h: 260px;
-  --gap: 40px;
+  :root{
+    --bottom: 120px;
 
-  --title-size: 64px;
-  --name-size: 64px;
+    --heart-h: 260px;
+    --heart-scale: 1;
 
-  --fade-ms: 420ms;
-  --slide-in: 60px;
-}
+    --title-size: 56px;
+    --name-size: 46px;
 
-@font-face{
-  font-family: "Popeva";
-  src: url("images/Popeva.ttf") format("truetype");
-  font-display: swap;
-}
+    --page-ms: 5000ms;
+    --scan-ms: 2000ms;
+    --fade-ms: 260ms;
 
-#wrap{
-  position: fixed;
-  left:0; right:0;
-  bottom: var(--bottom);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-}
+    --carpet-w: 860px;
+    --stage-w: 1080px;
+    --travel: 600px;
 
-/* SHARP GOLD — NO GLOW, NO SHADOW */
-.gold{
-  color: #D4AF37;
-}
+    --carpet-h: 110px;
+    --carpet-radius: 26px;
 
-#title{
-  font-family: "Popeva","Georgia",serif;
-  font-size: var(--title-size);
-  letter-spacing: 2px;
-  margin-bottom: 30px;
-  text-transform: uppercase;
-}
+    --pad-left: 28px;
 
-#row{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: var(--gap);
-  min-height: calc(var(--heart-h) + 12px);
-}
+    --title-offset: 50px;
+  }
 
-#heart{
-  height: var(--heart-h);
-  width:auto;
-  display:block;
-  opacity:0;
-  transform:translateX(calc(var(--slide-in) * -1));
-}
+  @font-face{
+    font-family: "OverlayFont";
+    src: url("./images/Poppins-BlackItalic.ttf") format("truetype");
+    font-weight: 900;
+    font-style: italic;
+    font-display: swap;
+  }
 
-#name{
-  min-width:480px;
-  max-width:800px;
-  white-space: nowrap;
-  overflow:hidden;
+  #wrap{
+    position: fixed;
+    left:0; right:0;
+    bottom: var(--bottom);
+    display:flex;
+    justify-content:center;
+    pointer-events:none;
+  }
 
-  font-family:"Popeva","Georgia",serif;
-  font-size:var(--name-size);
-  letter-spacing:1px;
-  text-transform: uppercase;
+  /* ✅ FIX: constant height so nothing shifts when heart-scale changes */
+  #frame{
+    position: relative;
+    width: min(1080px, 100vw);
+    height: max(var(--heart-h), var(--carpet-h));
+  }
 
-  opacity:0;
-  transform:translateX(var(--slide-in));
-  line-height: 1.05;
-}
+  #title{
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate3d(0, calc(-1 * var(--title-offset)), 0);
 
-#name.twoLine{
-  white-space: normal;
-}
+    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: var(--title-size);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #D4AF37;
+    white-space: nowrap;
+    z-index: 2;
+  }
 
-/* Enter animations */
-.in #heart{ animation: heartIn var(--fade-ms) forwards; }
-.in #name{  animation: nameIn  var(--fade-ms) forwards; }
+  /* ✅ stage pinned to frame-left; height fixed via frame */
+  #stage{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--stage-w);
+    height: 100%;
+  }
 
-@keyframes heartIn { to{opacity:1; transform:translateX(0);} }
-@keyframes nameIn  { to{opacity:1; transform:translateX(0);} }
+  #rotator{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: opacity var(--fade-ms) linear;
+  }
+  #rotator.out{ opacity:0; }
 
-/* Exit animations */
-.out #heart, .out #name{
-  opacity:0;
-  transition: opacity var(--fade-ms) ease, transform var(--fade-ms) ease;
-}
-.out #heart{ transform:translateX(calc(var(--slide-in) * -1)); }
-.out #name { transform:translateX(var(--slide-in)); }
+  #carpet{
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    width: var(--carpet-w);
+    height: var(--carpet-h);
+    border-radius: var(--carpet-radius);
 
-@media (max-width:900px){
-  :root{ --heart-h:200px; --title-size:48px; --name-size:48px; }
-  #name{ min-width:320px; }
-}
+    background: linear-gradient(
+      180deg,
+      rgba(255, 40, 40, 0.95) 0%,
+      rgba(220, 0, 0, 0.95) 45%,
+      rgba(140, 0, 0, 0.95) 100%
+    );
+
+    box-shadow:
+      0 0 18px rgba(255, 0, 0, 0.55),
+      0 0 36px rgba(255, 0, 0, 0.35);
+
+    clip-path: inset(0 100% 0 0 round var(--carpet-radius));
+  }
+
+  #name{
+    position: absolute;
+    left: var(--pad-left);
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    height: var(--carpet-h);
+    display:flex;
+    align-items:center;
+
+    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: var(--name-size);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #D4AF37;
+
+    width: calc(var(--carpet-w) - var(--pad-left));
+    clip-path: inset(0 100% 0 0 round var(--carpet-radius));
+    white-space: nowrap;
+  }
+
+  #scanner{
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    z-index: 5;
+  }
+
+  #heart{
+    height: calc(var(--heart-h) * var(--heart-scale));
+    width: auto;
+    display:block;
+  }
+
+  .scan #scanner{ animation: scanMove var(--scan-ms) linear forwards; }
+  .scan #carpet,
+  .scan #name{ animation: revealClip var(--scan-ms) linear forwards; }
+
+  @keyframes scanMove{
+    from { transform: translate3d(0, -50%, 0); }
+    to   { transform: translate3d(var(--travel), -50%, 0); }
+  }
+
+  @keyframes revealClip{
+    from { clip-path: inset(0 100% 0 0 round var(--carpet-radius)); }
+    to   { clip-path: inset(0 0% 0 0 round var(--carpet-radius)); }
+  }
+
+  #measure{
+    position:absolute;
+    left:-99999px;
+    top:-99999px;
+    visibility:hidden;
+    white-space:nowrap;
+    font-size: var(--name-size);
+    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
 </style>
 </head>
 
 <body>
-<div id="wrap">
-  <div id="title" class="gold">TOP MEMBERS</div>
-  <div id="row">
-    <img id="heart" src="images/top.png" alt="heart">
-    <div id="name" class="gold">POPEVA - 46</div>
+  <div id="wrap">
+    <div id="frame">
+      <div id="title">TOP MEMBERS</div>
+
+      <div id="stage">
+        <div id="rotator">
+          <div id="carpet"></div>
+          <div id="name">POPEVA - 46</div>
+          <div id="scanner">
+            <img id="heart" src="images/top.png" alt="scanner">
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+
+  <div id="measure"></div>
 
 <script>
-const PAGE_MS = 5000;
-const FADE_MS = 420;
-const ASSET_VERSION = 1;
+  const PAGE_MS = 5000, SCAN_MS = 2000, FADE_MS = 260;
 
-const pages = [
-  { img: "images/top.png", text: "POPEVA - 46" },
-  { img: "images/mid.png", text: "SALVIOR - 37" },
-  { img: "images/mid.png", text: "GHOST RIDER - 33" },
-  { img: "images/mid.png", text: "LINIQ - 30" },
-  { img: "images/low.png", html: "OBERON &<br>VLADI13_12 - 28", twoLine: true }
-];
+  const pages = [
+    { img: "images/top.png", text: "POPEVA - 46" },
+    { img: "images/mid.png", text: "SALVIOR - 37" },
+    { img: "images/mid.png", text: "GHOST RIDER - 34" },
+    { img: "images/mid.png", text: "LINIQ - 30" },
+    { img: "images/low.png", text: "VLADI13_12 - 29" },
+    { img: "images/low.png", text: "OBERON - 28" }
+  ];
 
-const wrap  = document.getElementById("wrap");
-const heart = document.getElementById("heart");
-const nameEl = document.getElementById("name");
+  const frame   = document.getElementById("frame"),
+        rotator = document.getElementById("rotator"),
+        heart   = document.getElementById("heart"),
+        nameEl  = document.getElementById("name"),
+        meas    = document.getElementById("measure");
 
-let idx = 0;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let idx = 0;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function busted(path, pageIndex){
-  return path + "?v=" + ASSET_VERSION + "&p=" + pageIndex;
-}
-
-function setHeart(path, pageIndex){
-  return new Promise(resolve => {
-    const target = busted(path, pageIndex);
-    heart.onload = () => resolve();
-    heart.onerror = () => resolve();
-    heart.src = target;
-    if (heart.decode) heart.decode().then(resolve).catch(resolve);
-  });
-}
-
-function replayEnter(){
-  wrap.classList.remove("in","out");
-  void wrap.offsetWidth;
-  wrap.classList.add("in");
-}
-
-async function showPage(p, pageIndex){
-  nameEl.classList.toggle("twoLine", !!p.twoLine);
-  if (p.html) nameEl.innerHTML = p.html;
-  else nameEl.textContent = p.text;
-
-  await setHeart(p.img, pageIndex);
-  replayEnter();
-  await sleep(PAGE_MS);
-}
-
-async function cycle(){
-  while(true){
-    await showPage(pages[idx], idx);
-
-    wrap.classList.remove("in");
-    wrap.classList.add("out");
-    await sleep(FADE_MS);
-
-    idx = (idx + 1) % pages.length;
+  function setScale(src){
+    document.documentElement.style.setProperty(
+      "--heart-scale",
+      (src.includes("mid.png") || src.includes("low.png")) ? "0.6" : "1"
+    );
   }
-}
-cycle();
+
+  function setHeart(path){
+    return new Promise(res=>{
+      setScale(path);
+      heart.onload=res; heart.onerror=res;
+      heart.src = path;
+      if (heart.decode) heart.decode().then(res).catch(()=>{});
+    });
+  }
+
+  function resetScan(){ rotator.classList.remove("scan"); void rotator.offsetWidth; }
+  function startScan(){ rotator.classList.add("scan"); }
+  function clamp(n,lo,hi){ return Math.max(lo,Math.min(hi,n)); }
+
+  function computeGeometry(text){
+    const afterTextPx = 50;
+    const overlapPx = 20; // (your current overlap after moving heart right 20px)
+
+    const frameW = Math.ceil(frame.getBoundingClientRect().width);
+
+    meas.textContent = text;
+    const textW = Math.ceil(meas.getBoundingClientRect().width);
+
+    const padLeft = 28;
+    const heartW = Math.ceil(heart.getBoundingClientRect().width) || 220;
+
+    let carpetW = padLeft + textW + afterTextPx;
+
+    const maxCarpetW = Math.max(240, frameW - heartW + overlapPx);
+    carpetW = clamp(carpetW, 240, maxCarpetW);
+
+    const stageW = carpetW + heartW - overlapPx;
+    const travel = carpetW - overlapPx;
+
+    document.documentElement.style.setProperty("--carpet-w", carpetW + "px");
+    document.documentElement.style.setProperty("--stage-w", stageW + "px");
+    document.documentElement.style.setProperty("--travel", travel + "px");
+  }
+
+  async function showPage(p){
+    nameEl.textContent = p.text;
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    await setHeart(p.img);
+    computeGeometry(p.text);
+    rotator.classList.remove("out");
+    resetScan(); startScan();
+    await sleep(PAGE_MS);
+  }
+
+  async function cycle(){
+    while(true){
+      await showPage(pages[idx]);
+      rotator.classList.add("out");
+      await sleep(FADE_MS);
+      idx = (idx + 1) % pages.length;
+    }
+  }
+
+  window.addEventListener("resize",()=>computeGeometry(pages[idx].text));
+  cycle();
 </script>
 </body>
 </html>

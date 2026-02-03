@@ -17,19 +17,18 @@
     --title-size: 56px;
     --name-size: 46px;
 
-    /* ✅ requested timing */
-    --fade-ms: 1000ms;          /* 1s fade */
-    --idle-ms: 6000ms;          /* 6s fully visible (idle) */
+    --page-ms: 6000ms;
+    --fade-ms: 1000ms;
 
     --carpet-w: 860px;
+    --stage-w: 1080px;
+
     --carpet-h: 110px;
-    --carpet-radius: 26px;
+    --carpet-radius: 40px;
 
     --pad-left: 28px;
+    --pad-right: 28px;
     --title-offset: 50px;
-
-    --overlap: 20px;            /* heart overlaps carpet a bit */
-    --heart-w: 220px;           /* stable width used for layout calc */
   }
 
   @font-face{
@@ -69,77 +68,58 @@
     text-transform: uppercase;
     color: #D4AF37;
     white-space: nowrap;
-    z-index: 3;
+    z-index: 2;
   }
 
   #stage{
-    position:absolute;
-    left:0; top:0;
-    width:100%;
-    height:100%;
-  }
-
-  #card{
-    position:absolute;
-    left:0;
-    top:50%;
-    transform: translate3d(0,-50%,0);
-    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--stage-w);
     height: 100%;
   }
 
-  /* each layer fills the card and crossfades */
-  .layer{
-    position:absolute;
-    inset:0;
-    opacity:0;
+  #rotator{
+    position: relative;
+    width: 100%;
+    height: 100%;
     transition: opacity var(--fade-ms) linear;
-    will-change: opacity;
   }
-  .layer.on{ opacity:1; }
+  #rotator.out{ opacity:0; }
 
-  /* optional tiny "pop" (still cheap: transform) */
-  .layer.on .name,
-  .layer.on .heartWrap{
-    animation: popIn var(--fade-ms) ease-out both;
-    will-change: transform, opacity;
-  }
-
-  @keyframes popIn{
-    from { transform: translate3d(0,-50%,0) scale(0.985); opacity: 0.9; }
-    to   { transform: translate3d(0,-50%,0) scale(1); opacity: 1; }
-  }
-
-  /* carpet */
-  .carpet{
-    position:absolute;
-    left:0;
-    top:50%;
-    transform: translate3d(0,-50%,0);
+  /* Carpet */
+  #carpet{
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
     width: var(--carpet-w);
     height: var(--carpet-h);
     border-radius: var(--carpet-radius);
-    overflow:hidden;
 
     background: linear-gradient(
       180deg,
-      rgba(255, 40, 40, 0.95) 0%,
-      rgba(220, 0, 0, 0.95) 45%,
-      rgba(140, 0, 0, 0.95) 100%
+      #7a0f1f 0%,
+      #5a0c17 45%,
+      #3d0810 100%
     );
 
-    /* reduced cost shadow */
+    border: 4.5px solid #d4af37;
+
     box-shadow:
-      0 0 12px rgba(255, 0, 0, 0.45),
-      0 0 22px rgba(255, 0, 0, 0.28);
+      0 0 22px rgba(120, 0, 40, 0.45),
+      0 0 60px rgba(60, 0, 20, 0.35);
   }
 
-  /* name */
-  .name{
-    position:absolute;
+  #name{
+    position: absolute;
     left: var(--pad-left);
-    top:50%;
-    transform: translate3d(0,-50%,0);
+    right: calc(var(--heart-h) * var(--heart-scale) + var(--pad-right));
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    height: var(--carpet-h);
+    display:flex;
+    align-items:center;
 
     font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
     font-weight: 900;
@@ -150,45 +130,28 @@
     color: #D4AF37;
 
     white-space: nowrap;
-    z-index: 2;
+    overflow: hidden;
   }
 
-  /* heart placement */
-  .heartWrap{
-    position:absolute;
-    left: calc(var(--carpet-w) - var(--overlap));
-    top:50%;
-    transform: translate3d(0,-50%,0);
-    z-index: 2;
+  /* Heart default (right aligned) */
+  #scanner{
+    position: absolute;
+    right: var(--pad-right);
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    z-index: 5;
+    transition: transform 300ms ease;
   }
 
-  /* ✅ requested: PNG itself fades too */
-  .heart{
+  /* 👇 First page offset */
+  #scanner.shift-left{
+    transform: translate3d(-50px, -50%, 0);
+  }
+
+  #heart{
     height: calc(var(--heart-h) * var(--heart-scale));
     width: auto;
     display:block;
-
-    opacity: 0;
-    transition: opacity var(--fade-ms) linear;
-    will-change: opacity;
-  }
-  .layer.on .heart{
-    opacity: 1;
-  }
-
-  /* measure text width offscreen */
-  #measure{
-    position:absolute;
-    left:-99999px;
-    top:-99999px;
-    visibility:hidden;
-    white-space:nowrap;
-    font-size: var(--name-size);
-    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: 2px;
-    text-transform: uppercase;
   }
 </style>
 </head>
@@ -199,39 +162,20 @@
       <div id="title">TOP MEMBERS</div>
 
       <div id="stage">
-        <div id="card">
-
-          <!-- Layer A -->
-          <div id="layerA" class="layer on">
-            <div class="carpet"></div>
-            <div id="nameA" class="name">POPEVA - 46</div>
-            <div class="heartWrap">
-              <img id="heartA" class="heart" src="images/top.png" alt="">
-            </div>
+        <div id="rotator">
+          <div id="carpet"></div>
+          <div id="name">POPEVA - 46</div>
+          <div id="scanner">
+            <img id="heart" src="images/top.png" alt="icon">
           </div>
-
-          <!-- Layer B -->
-          <div id="layerB" class="layer">
-            <div class="carpet"></div>
-            <div id="nameB" class="name">SALVIOR - 37</div>
-            <div class="heartWrap">
-              <img id="heartB" class="heart" src="images/mid.png" alt="">
-            </div>
-          </div>
-
         </div>
       </div>
-
     </div>
   </div>
 
-  <div id="measure"></div>
-
 <script>
-  // timing (ms)
-  const FADE_MS = 1000;  // 1s
-  const IDLE_MS = 6000;  // 6s fully visible after fade
-  const PAGE_MS = FADE_MS + IDLE_MS; // total per item
+  const PAGE_MS = 6000;
+  const FADE_MS = 1000;
 
   const pages = [
     { img: "images/top.png", text: "POPEVA - 46" },
@@ -242,139 +186,39 @@
     { img: "images/low.png", text: "OBERON - 28" }
   ];
 
-  const frame  = document.getElementById("frame");
-  const meas   = document.getElementById("measure");
-
-  const layerA = document.getElementById("layerA");
-  const layerB = document.getElementById("layerB");
-
-  const nameA  = document.getElementById("nameA");
-  const nameB  = document.getElementById("nameB");
-
-  const heartA = document.getElementById("heartA");
-  const heartB = document.getElementById("heartB");
-
-  const rootStyle = document.documentElement.style;
+  const rotator = document.getElementById("rotator");
+  const heart   = document.getElementById("heart");
+  const nameEl  = document.getElementById("name");
+  const scanner = document.getElementById("scanner");
 
   let idx = 0;
-  let showingA = true;
-  let fontsReady = false;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  async function showPage(p, index){
+    nameEl.textContent = p.text;
+    heart.src = p.img;
 
-  async function ensureFontsOnce(){
-    if (fontsReady) return;
-    if (document.fonts?.ready) {
-      try { await document.fonts.ready; } catch(e){}
-    }
-    fontsReady = true;
-  }
-
-  async function preloadImages(){
-    const uniq = [...new Set(pages.map(p => p.img))];
-    await Promise.all(uniq.map(src => {
-      const img = new Image();
-      img.src = src;
-      return img.decode ? img.decode().catch(()=>{}) : Promise.resolve();
-    }));
-  }
-
-  function setScaleFor(src){
-    rootStyle.setProperty(
-      "--heart-scale",
-      (src.includes("mid.png") || src.includes("low.png")) ? "0.6" : "1"
-    );
-  }
-
-  function computeCarpetW(text){
-    // simple + cheap: measure text only
-    const afterTextPx = 50;
-    const padLeft = 28;
-
-    meas.textContent = text;
-    const textW = meas.offsetWidth;
-
-    // stable heart width avoids layout reads (tune if needed)
-    const heartW = 220;
-    const overlapPx = 20;
-
-    const frameW = frame.offsetWidth;
-
-    let carpetW = padLeft + textW + afterTextPx;
-    const maxCarpetW = Math.max(240, frameW - heartW + overlapPx);
-    carpetW = clamp(carpetW, 240, maxCarpetW);
-
-    rootStyle.setProperty("--carpet-w", carpetW + "px");
-  }
-
-  function setLayerContent(isA, p){
-    if (isA){
-      nameA.textContent = p.text;
-      heartA.src = p.img;
+    // Apply shift ONLY on first page
+    if(index === 0){
+      scanner.classList.add("shift-left");
     } else {
-      nameB.textContent = p.text;
-      heartB.src = p.img;
+      scanner.classList.remove("shift-left");
     }
-  }
 
-  async function show(p){
-    await ensureFontsOnce();
-
-    // Update layout + scale based on the incoming item
-    setScaleFor(p.img);
-    computeCarpetW(p.text);
-
-    // Fill the hidden layer with next content BEFORE fading
-    const nextIsA = !showingA;
-    setLayerContent(nextIsA, p);
-
-    // Ensure the new image is decoded (preload already helps, but this avoids rare hiccups)
-    const imgEl = nextIsA ? heartA : heartB;
-    if (imgEl.decode) { try { await imgEl.decode(); } catch(e){} }
-
-    // Crossfade layers
-    requestAnimationFrame(() => {
-      if (nextIsA){
-        layerA.classList.add("on");
-        layerB.classList.remove("on");
-      } else {
-        layerB.classList.add("on");
-        layerA.classList.remove("on");
-      }
-      showingA = nextIsA;
-    });
-
-    // Wait total duration (fade + idle)
+    rotator.classList.remove("out");
     await sleep(PAGE_MS);
   }
 
-  window.addEventListener("resize", () => {
-    const current = pages[(idx - 1 + pages.length) % pages.length];
-    computeCarpetW(current.text);
-  }, { passive:true });
-
-  (async function init(){
-    await preloadImages();
-
-    // initial content
-    await ensureFontsOnce();
-    setLayerContent(true, pages[0]);
-    setScaleFor(pages[0].img);
-    computeCarpetW(pages[0].text);
-
-    // make sure first PNG is visible
-    layerA.classList.add("on");
-    layerB.classList.remove("on");
-    showingA = true;
-
-    idx = 1;
-
+  async function cycle(){
     while(true){
-      await show(pages[idx]);
+      await showPage(pages[idx], idx);
+      rotator.classList.add("out");
+      await sleep(FADE_MS);
       idx = (idx + 1) % pages.length;
     }
-  })();
+  }
+
+  cycle();
 </script>
 </body>
 </html>

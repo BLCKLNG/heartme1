@@ -28,7 +28,12 @@
 
     --pad-left: 28px;
     --pad-right: 28px;
+
+    --overlap: 25px;
+    --icon-nudge-right: 15px;
+
     --title-offset: 50px;
+    --gold: #D4AF37;
   }
 
   @font-face{
@@ -66,7 +71,7 @@
     font-size: var(--title-size);
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: #D4AF37;
+    color: var(--gold);
     white-space: nowrap;
     z-index: 2;
   }
@@ -87,7 +92,6 @@
   }
   #rotator.out{ opacity:0; }
 
-  /* Carpet */
   #carpet{
     position: absolute;
     left: 0;
@@ -103,8 +107,7 @@
       #5a0c17 45%,
       #3d0810 100%
     );
-
-    border: 4.5px solid #d4af37;
+    border: 4.5px solid var(--gold);
 
     box-shadow:
       0 0 22px rgba(120, 0, 40, 0.45),
@@ -114,7 +117,6 @@
   #name{
     position: absolute;
     left: var(--pad-left);
-    right: calc(var(--heart-h) * var(--heart-scale) + var(--pad-right));
     top: 50%;
     transform: translate3d(0, -50%, 0);
     height: var(--carpet-h);
@@ -127,31 +129,39 @@
     font-size: var(--name-size);
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #D4AF37;
+    color: var(--gold);
 
     white-space: nowrap;
     overflow: hidden;
+    z-index: 4;
   }
 
-  /* Heart default (right aligned) */
   #scanner{
     position: absolute;
-    right: var(--pad-right);
     top: 50%;
     transform: translate3d(0, -50%, 0);
     z-index: 5;
-    transition: transform 300ms ease;
-  }
-
-  /* 👇 First page offset */
-  #scanner.shift-left{
-    transform: translate3d(-50px, -50%, 0);
+    pointer-events:none;
   }
 
   #heart{
     height: calc(var(--heart-h) * var(--heart-scale));
     width: auto;
     display:block;
+  }
+
+  #measure{
+    position:absolute;
+    left:-99999px;
+    top:-99999px;
+    visibility:hidden;
+    white-space:nowrap;
+    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: var(--name-size);
+    letter-spacing: 2px;
+    text-transform: uppercase;
   }
 </style>
 </head>
@@ -173,6 +183,8 @@
     </div>
   </div>
 
+  <div id="measure"></div>
+
 <script>
   const PAGE_MS = 6000;
   const FADE_MS = 1000;
@@ -190,33 +202,125 @@
   const heart   = document.getElementById("heart");
   const nameEl  = document.getElementById("name");
   const scanner = document.getElementById("scanner");
+  const meas    = document.getElementById("measure");
 
-  let idx = 0;
+  const css = document.documentElement.style;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  async function showPage(p, index){
-    nameEl.textContent = p.text;
-    heart.src = p.img;
+  function pxVar(name){
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return parseFloat(v) || 0;
+  }
 
-    // Apply shift ONLY on first page
-    if(index === 0){
-      scanner.classList.add("shift-left");
-    } else {
-      scanner.classList.remove("shift-left");
+  function scaleFor(src){
+    const TOP = 1.05;
+    const MID = TOP * 0.80;
+    const LOW = MID * 0.85;
+    const s = src.toLowerCase();
+    if (s.includes("top.png")) return TOP;
+    if (s.includes("mid.png")) return MID;
+    if (s.includes("low.png")) return LOW;
+    return 1;
+  }
+
+  async function getImageNatural(path){
+    return new Promise(res=>{
+      const img = new Image();
+      img.onload = () => res({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
+      img.onerror = () => res({ w: 1, h: 1 });
+      img.src = path;
+    });
+  }
+
+  function textWidth(text){
+    meas.textContent = text;
+    return Math.ceil(meas.getBoundingClientRect().width);
+  }
+
+  async function computeSizes(){
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+    const padLeft  = pxVar("--pad-left");
+    const padRight = pxVar("--pad-right");
+    const heartH   = pxVar("--heart-h");
+    const nudgeR   = pxVar("--icon-nudge-right");
+
+    let maxTextW = 0;
+    for (const p of pages){
+      maxTextW = Math.max(maxTextW, textWidth(p.text));
     }
 
+    let maxIconW = 0;
+    for (const p of pages){
+      const nat = await getImageNatural(p.img);
+      const scale = scaleFor(p.img);
+      const displayW = nat.w * ((heartH * scale) / nat.h);
+      maxIconW = Math.max(maxIconW, displayW);
+    }
+    maxIconW = Math.ceil(maxIconW);
+
+    const reserved = maxIconW + padRight + nudgeR;
+    const carpetW = Math.ceil(padLeft + maxTextW + 50 + reserved);
+    const stageW  = Math.ceil(carpetW + maxIconW + nudgeR);
+
+    css.setProperty("--carpet-w", carpetW + "px");
+    css.setProperty("--stage-w", stageW + "px");
+
+    nameEl.style.width = Math.max(0, carpetW - padLeft - reserved) + "px";
+  }
+
+  async function positionIconForCurrent(){
+    const nudgeR  = pxVar("--icon-nudge-right");
+    const carpetW = pxVar("--carpet-w");
+    const heartH  = pxVar("--heart-h");
+
+    const scale = scaleFor(heart.src);
+    css.setProperty("--heart-scale", String(scale));
+
+    const nat = await getImageNatural(heart.src);
+    const curW = Math.ceil(nat.w * ((heartH * scale) / nat.h));
+
+    /* 🔥 ONLY CHANGE: push PNGs a bit more right to fully cover carpet edge */
+    const COVER = 18;
+    const left = Math.ceil(carpetW - curW + nudgeR + COVER);
+
+    scanner.style.left = left + "px";
+  }
+
+  async function setHeart(src){
+    return new Promise(res=>{
+      heart.onload = res; heart.onerror = res;
+      heart.src = src;
+      if (heart.decode) heart.decode().then(res).catch(()=>{});
+    });
+  }
+
+  async function showPage(p){
+    nameEl.textContent = p.text;
+    await setHeart(p.img);
+    await positionIconForCurrent();
     rotator.classList.remove("out");
     await sleep(PAGE_MS);
   }
 
+  let idx = 0;
+
   async function cycle(){
+    await computeSizes();
+    await positionIconForCurrent();
+
     while(true){
-      await showPage(pages[idx], idx);
+      await showPage(pages[idx]);
       rotator.classList.add("out");
       await sleep(FADE_MS);
       idx = (idx + 1) % pages.length;
     }
   }
+
+  window.addEventListener("resize", async ()=>{
+    await computeSizes();
+    await positionIconForCurrent();
+  }, { passive:true });
 
   cycle();
 </script>

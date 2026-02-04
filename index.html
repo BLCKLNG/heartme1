@@ -4,6 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+<!-- Preload critical assets (helps GitHub/BrowserSource be consistent) -->
+<link rel="preload" href="images/Poppins-BlackItalic.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="images/top.png" as="image">
+<link rel="preload" href="images/mid.png" as="image">
+<link rel="preload" href="images/low.png" as="image">
+
 <style>
   html, body { margin:0; background:transparent; overflow:hidden; }
   * { box-sizing:border-box; }
@@ -17,7 +23,7 @@
     --heart-h: 260px;
     --heart-scale: 1;
 
-    --name-size: 46px; /* base text size */
+    --name-size: 46px;
 
     --page-ms: 6000ms;
     --fade-ms: 1000ms;
@@ -37,7 +43,8 @@
 
   @font-face{
     font-family: "OverlayFont";
-    src: url("./images/Poppins-BlackItalic.ttf") format("truetype");
+    /* removed "./" to avoid path weirdness across hosts */
+    src: url("images/Poppins-BlackItalic.ttf") format("truetype");
     font-weight: 900;
     font-style: italic;
     font-display: swap;
@@ -71,38 +78,32 @@
     overflow: visible;
   }
 
-  /* 🔥 TITLE STYLING */
- #title{
-  position:absolute;
-  left:0;
-  top:0;
-  transform: translate3d(0, calc(-1 * var(--title-offset)), 0);
+  /* Title: burgundy fill + gold outline + 15% bigger than name */
+  #title{
+    position:absolute;
+    left:0;
+    top:0;
+    transform: translate3d(0, calc(-1 * var(--title-offset)), 0);
 
-  font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
-  font-weight:900;
-  font-style:italic;
+    font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight:900;
+    font-style:italic;
 
-  /* 15% larger than name text */
-  font-size: calc(var(--name-size) * 1.15);
+    font-size: calc(var(--name-size) * 1.15);
 
-  letter-spacing:3px;
-  text-transform:uppercase;
-  white-space:nowrap;
-  z-index: 10;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    white-space:nowrap;
+    z-index: 10;
 
-  /* Burgundy fill */
-  color: #7a0f1f;
+    color: #7a0f1f;
+    -webkit-text-stroke: 4.5px var(--gold);
+    paint-order: stroke fill;
 
-  /* Match carpet border thickness */
-  -webkit-text-stroke: 4.5px var(--gold);
-
-  /* Makes stroke render outside the fill instead of eating into it */
-  paint-order: stroke fill;
-
-  /* Slight glow to match the soft edge feel of the carpet */
-  text-shadow:
-    0 0 2px rgba(212,175,55,0.7),
-    0 0 6px rgba(212,175,55,0.35);
+    /* subtle gold glow similar vibe to carpet */
+    text-shadow:
+      0 0 2px rgba(212,175,55,0.7),
+      0 0 6px rgba(212,175,55,0.35);
   }
 
   #stage{
@@ -249,24 +250,17 @@
     css.setProperty("--ui-scale", String(scale));
   }
 
+  // Robust: works with full URLs, querystrings, etc.
   function scaleFor(src){
+    const s = (src || "").toLowerCase();
     const TOP = 1.05;
     const MID = TOP * 0.80;
     const LOW = MID * 0.85;
-    const s = (src || "").toLowerCase();
+
     if (s.includes("top.png")) return TOP;
     if (s.includes("mid.png")) return MID;
     if (s.includes("low.png")) return LOW;
     return 1;
-  }
-
-  async function getImageNatural(path){
-    return new Promise(res=>{
-      const img = new Image();
-      img.onload  = () => res({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
-      img.onerror = () => res({ w: 1, h: 1 });
-      img.src = path;
-    });
   }
 
   function measureTextWidth(text){
@@ -288,22 +282,33 @@
     });
   }
 
-  async function positionLayoutForCurrent(text){
-    const inset   = pxVar("--text-inset");
-    const gapAfter= pxVar("--gap-after-icon");
-    const nudgeL  = pxVar("--icon-nudge-left");
-    const heartH  = pxVar("--heart-h");
-
+  // IMPORTANT CHANGE: icon sizing comes from the *actual* <img> (naturalWidth/Height),
+  // not a separate Image() object (fixes hosted vs local drift).
+  function getLoadedIconWidth(){
+    const heartH = pxVar("--heart-h");
     const scale = scaleFor(heart.src);
     css.setProperty("--heart-scale", String(scale));
 
-    const nat = await getImageNatural(heart.src);
-    const iconW = Math.ceil(nat.w * ((heartH * scale) / nat.h));
+    const nw = heart.naturalWidth || 0;
+    const nh = heart.naturalHeight || 0;
+    if (!nw || !nh) return 0;
+
+    return Math.ceil(nw * ((heartH * scale) / nh));
+  }
+
+  async function positionLayoutForCurrent(text){
+    const inset    = pxVar("--text-inset");      // 15
+    const gapAfter = pxVar("--gap-after-icon");  // 10
+    const nudgeL   = pxVar("--icon-nudge-left"); // 10
+
+    // icon size from loaded <img>
+    const iconW = getLoadedIconWidth();
 
     scanner.style.left = "0px";
 
     const carpetLeft = Math.ceil(iconW + gapAfter - Math.max(0, nudgeL));
 
+    // Per-page carpet width: text + 15px left + 15px right
     const textW = measureTextWidth(text);
     const carpetW = Math.ceil(textW + inset + inset);
 
@@ -331,7 +336,14 @@
 
   async function cycle(){
     applyUIScale();
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+    // Wait for font metrics to stabilize (fixes hosted measurement drift)
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch(e) {}
+    }
+
+    // Ensure first image is loaded before first layout
+    await setHeart(pages[0].img);
 
     while(true){
       await showPage(pages[idx]);

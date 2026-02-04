@@ -4,12 +4,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Preload critical assets (helps GitHub/BrowserSource be consistent) -->
-<link rel="preload" href="images/Poppins-BlackItalic.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="preload" href="images/top.png" as="image">
-<link rel="preload" href="images/mid.png" as="image">
-<link rel="preload" href="images/low.png" as="image">
-
 <style>
   html, body { margin:0; background:transparent; overflow:hidden; }
   * { box-sizing:border-box; }
@@ -17,33 +11,39 @@
   :root{
     --bottom: 120px;
 
+    /* scaling */
     --design-w: 1080;
     --design-h: 300;
 
+    /* icon */
     --heart-h: 260px;
     --heart-scale: 1;
 
-    --name-size: 46px;
+    /* text */
+    --name-size: 46px;          /* base name size */
+    --text-inset: 15px;         /* 15px left + 15px right inside carpet */
 
+    /* spacing between icon and carpet:
+       set this to 0 if you want them touching;
+       set to negative if you want overlap.
+    */
+    --join-gap: 0px;
+
+    /* title */
+    --title-offset: 50px;
+    --gold: #D4AF37;
+
+    /* timing */
     --page-ms: 6000ms;
     --fade-ms: 1000ms;
 
+    /* carpet */
     --carpet-h: 110px;
     --carpet-radius: 40px;
-
-    --text-inset: 15px;
-
-    --gap-after-icon: 10px;
-    --icon-nudge-left: 10px;
-
-    --title-offset: 50px;
-
-    --gold: #D4AF37;
   }
 
   @font-face{
     font-family: "OverlayFont";
-    /* removed "./" to avoid path weirdness across hosts */
     src: url("images/Poppins-BlackItalic.ttf") format("truetype");
     font-weight: 900;
     font-style: italic;
@@ -78,7 +78,6 @@
     overflow: visible;
   }
 
-  /* Title: burgundy fill + gold outline + 15% bigger than name */
   #title{
     position:absolute;
     left:0;
@@ -89,6 +88,7 @@
     font-weight:900;
     font-style:italic;
 
+    /* 15% bigger than name */
     font-size: calc(var(--name-size) * 1.15);
 
     letter-spacing:3px;
@@ -99,8 +99,6 @@
     color: #7a0f1f;
     -webkit-text-stroke: 4.5px var(--gold);
     paint-order: stroke fill;
-
-    /* subtle gold glow similar vibe to carpet */
     text-shadow:
       0 0 2px rgba(212,175,55,0.7),
       0 0 6px rgba(212,175,55,0.35);
@@ -110,40 +108,58 @@
     position:absolute;
     left:0;
     top:0;
-    width: 1080px;
     height: 100%;
     overflow: visible;
   }
 
   #rotator{
     position:relative;
-    width:100%;
     height:100%;
     transition: opacity var(--fade-ms) linear;
     overflow: visible;
   }
   #rotator.out{ opacity:0; }
 
-  #carpet{
+  /* ✅ This row is the key: no absolute positioning drift */
+  #row{
     position:absolute;
     top:50%;
     transform: translate3d(0, -50%, 0);
+    display:flex;
+    align-items:center;
+    gap: var(--join-gap);
+    overflow: visible;
+  }
+
+  #scanner{
+    pointer-events:none;
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+
+  #heart{
+    height: calc(var(--heart-h) * var(--heart-scale));
+    width:auto;
+    display:block;
+  }
+
+  /* Carpet is now the container for the text */
+  #carpet{
     height: var(--carpet-h);
     border-radius: var(--carpet-radius);
+
     background: linear-gradient(180deg,#7a0f1f 0%,#5a0c17 45%,#3d0810 100%);
     border: 4.5px solid var(--gold);
     box-shadow: 0 0 22px rgba(120,0,40,.45), 0 0 60px rgba(60,0,20,.35);
-    z-index: 1;
+
+    display:flex;
+    align-items:center;
+    padding: 0 var(--text-inset);
+    overflow: visible;
+    flex: 0 0 auto;
   }
 
   #name{
-    position:absolute;
-    top:50%;
-    transform: translate3d(0, -50%, 0);
-    height: var(--carpet-h);
-    display:flex;
-    align-items:center;
-
     font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
     font-weight:900;
     font-style:italic;
@@ -153,30 +169,14 @@
     color: var(--gold);
 
     white-space:nowrap;
-    overflow: visible;
-    z-index: 2;
+    line-height: 1;
   }
 
   .small-name{
     font-size: calc(var(--name-size) * 0.8);
   }
 
-  #scanner{
-    position:absolute;
-    top:50%;
-    transform: translate3d(0, -50%, 0);
-    z-index: 3;
-    pointer-events:none;
-    overflow: visible;
-    left: 0;
-  }
-
-  #heart{
-    height: calc(var(--heart-h) * var(--heart-scale));
-    width:auto;
-    display:block;
-  }
-
+  /* measurer mirrors #name */
   #measure{
     position:absolute;
     left:-99999px;
@@ -201,14 +201,18 @@
 
         <div id="stage">
           <div id="rotator">
-            <div id="scanner">
-              <img id="heart" src="images/top.png" alt="icon">
-            </div>
+            <div id="row">
+              <div id="scanner">
+                <img id="heart" src="images/top.png" alt="icon">
+              </div>
 
-            <div id="carpet"></div>
-            <div id="name">POPEVA - 46</div>
+              <div id="carpet">
+                <div id="name">POPEVA - 46</div>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -230,10 +234,8 @@
 
   const rotator = document.getElementById("rotator");
   const heart   = document.getElementById("heart");
+  const carpet  = document.getElementById("carpet");
   const nameEl  = document.getElementById("name");
-  const scanner = document.getElementById("scanner");
-  const carpetEl= document.getElementById("carpet");
-  const stageEl = document.getElementById("stage");
   const meas    = document.getElementById("measure");
   const css     = document.documentElement.style;
 
@@ -250,7 +252,6 @@
     css.setProperty("--ui-scale", String(scale));
   }
 
-  // Robust: works with full URLs, querystrings, etc.
   function scaleFor(src){
     const s = (src || "").toLowerCase();
     const TOP = 1.05;
@@ -263,15 +264,15 @@
     return 1;
   }
 
-  function measureTextWidth(text){
-    meas.textContent = text;
-    return Math.ceil(meas.getBoundingClientRect().width);
-  }
-
   function applySmallNameClassFor(text){
     const isSmall = text.includes("GHOST RIDER") || text.includes("VLADI13_12");
     nameEl.classList.toggle("small-name", isSmall);
     meas.classList.toggle("small-name", isSmall);
+  }
+
+  function measureTextWidth(text){
+    meas.textContent = text;
+    return Math.ceil(meas.getBoundingClientRect().width);
   }
 
   async function setHeart(src){
@@ -282,43 +283,12 @@
     });
   }
 
-  // IMPORTANT CHANGE: icon sizing comes from the *actual* <img> (naturalWidth/Height),
-  // not a separate Image() object (fixes hosted vs local drift).
-  function getLoadedIconWidth(){
-    const heartH = pxVar("--heart-h");
-    const scale = scaleFor(heart.src);
-    css.setProperty("--heart-scale", String(scale));
-
-    const nw = heart.naturalWidth || 0;
-    const nh = heart.naturalHeight || 0;
-    if (!nw || !nh) return 0;
-
-    return Math.ceil(nw * ((heartH * scale) / nh));
-  }
-
-  async function positionLayoutForCurrent(text){
-    const inset    = pxVar("--text-inset");      // 15
-    const gapAfter = pxVar("--gap-after-icon");  // 10
-    const nudgeL   = pxVar("--icon-nudge-left"); // 10
-
-    // icon size from loaded <img>
-    const iconW = getLoadedIconWidth();
-
-    scanner.style.left = "0px";
-
-    const carpetLeft = Math.ceil(iconW + gapAfter - Math.max(0, nudgeL));
-
-    // Per-page carpet width: text + 15px left + 15px right
+  function layoutForText(text){
+    const inset = pxVar("--text-inset"); // 15
     const textW = measureTextWidth(text);
-    const carpetW = Math.ceil(textW + inset + inset);
 
-    carpetEl.style.left = carpetLeft + "px";
-    carpetEl.style.width = carpetW + "px";
-
-    nameEl.style.left = (carpetLeft + inset) + "px";
-    nameEl.style.width = textW + "px";
-
-    stageEl.style.width = (carpetLeft + carpetW) + "px";
+    // Carpet width = text width + 15px left + 15px right
+    carpet.style.width = (textW + inset + inset) + "px";
   }
 
   async function showPage(p){
@@ -326,7 +296,9 @@
     nameEl.textContent = p.text;
 
     await setHeart(p.img);
-    await positionLayoutForCurrent(p.text);
+    css.setProperty("--heart-scale", String(scaleFor(p.img)));
+
+    layoutForText(p.text);
 
     rotator.classList.remove("out");
     await sleep(PAGE_MS);
@@ -336,14 +308,9 @@
 
   async function cycle(){
     applyUIScale();
-
-    // Wait for font metrics to stabilize (fixes hosted measurement drift)
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch(e) {}
     }
-
-    // Ensure first image is loaded before first layout
-    await setHeart(pages[0].img);
 
     while(true){
       await showPage(pages[idx]);
@@ -353,11 +320,11 @@
     }
   }
 
-  window.addEventListener("resize", async ()=>{
+  window.addEventListener("resize", ()=>{
     applyUIScale();
     const p = pages[idx];
     applySmallNameClassFor(p.text);
-    await positionLayoutForCurrent(p.text);
+    layoutForText(p.text);
   }, { passive:true });
 
   setTimeout(applyUIScale, 250);

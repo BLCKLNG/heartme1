@@ -11,28 +11,27 @@
   :root{
     --bottom: 120px;
 
+    --design-w: 1080;
+    --design-h: 300;
+
     --heart-h: 260px;
     --heart-scale: 1;
 
-    --title-size: 56px;
-    --name-size: 46px;
+    --name-size: 46px; /* base text size */
 
     --page-ms: 6000ms;
     --fade-ms: 1000ms;
 
-    --carpet-w: 860px;
-    --stage-w: 1080px;
-
     --carpet-h: 110px;
     --carpet-radius: 40px;
 
-    --pad-left: 28px;
-    --pad-right: 28px;
+    --text-inset: 15px;
 
-    --overlap: 25px;
-    --icon-nudge-right: 15px;
+    --gap-after-icon: 10px;
+    --icon-nudge-left: 10px;
 
     --title-offset: 50px;
+
     --gold: #D4AF37;
   }
 
@@ -51,102 +50,129 @@
     display:flex;
     justify-content:center;
     pointer-events:none;
+    overflow: visible;
   }
 
   #frame{
     position: relative;
-    width: min(1080px, 100vw);
-    height: max(var(--heart-h), var(--carpet-h));
+    width: min(calc(var(--design-w) * 1px), 100vw);
+    height: min(calc(var(--design-h) * 1px), 100vh);
+    overflow: visible;
   }
 
-  #title{
-    position: absolute;
-    left: 0;
-    top: 0;
-    transform: translate3d(0, calc(-1 * var(--title-offset)), 0);
+  #design{
+    position:absolute;
+    left:0;
+    bottom:0;
+    width: calc(var(--design-w) * 1px);
+    height: calc(var(--design-h) * 1px);
+    transform-origin: bottom center;
+    transform: scale(var(--ui-scale, 1));
+    overflow: visible;
+  }
 
-    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
-    font-weight: 900;
-    font-style: italic;
-    font-size: var(--title-size);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gold);
-    white-space: nowrap;
-    z-index: 2;
+  /* 🔥 TITLE STYLING */
+ #title{
+  position:absolute;
+  left:0;
+  top:0;
+  transform: translate3d(0, calc(-1 * var(--title-offset)), 0);
+
+  font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
+  font-weight:900;
+  font-style:italic;
+
+  /* 15% larger than name text */
+  font-size: calc(var(--name-size) * 1.15);
+
+  letter-spacing:3px;
+  text-transform:uppercase;
+  white-space:nowrap;
+  z-index: 10;
+
+  /* Burgundy fill */
+  color: #7a0f1f;
+
+  /* Match carpet border thickness */
+  -webkit-text-stroke: 4.5px var(--gold);
+
+  /* Makes stroke render outside the fill instead of eating into it */
+  paint-order: stroke fill;
+
+  /* Slight glow to match the soft edge feel of the carpet */
+  text-shadow:
+    0 0 2px rgba(212,175,55,0.7),
+    0 0 6px rgba(212,175,55,0.35);
   }
 
   #stage{
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: var(--stage-w);
+    position:absolute;
+    left:0;
+    top:0;
+    width: 1080px;
     height: 100%;
+    overflow: visible;
   }
 
   #rotator{
-    position: relative;
-    width: 100%;
-    height: 100%;
+    position:relative;
+    width:100%;
+    height:100%;
     transition: opacity var(--fade-ms) linear;
+    overflow: visible;
   }
   #rotator.out{ opacity:0; }
 
   #carpet{
-    position: absolute;
-    left: 0;
-    top: 50%;
+    position:absolute;
+    top:50%;
     transform: translate3d(0, -50%, 0);
-    width: var(--carpet-w);
     height: var(--carpet-h);
     border-radius: var(--carpet-radius);
-
-    background: linear-gradient(
-      180deg,
-      #7a0f1f 0%,
-      #5a0c17 45%,
-      #3d0810 100%
-    );
+    background: linear-gradient(180deg,#7a0f1f 0%,#5a0c17 45%,#3d0810 100%);
     border: 4.5px solid var(--gold);
-
-    box-shadow:
-      0 0 22px rgba(120, 0, 40, 0.45),
-      0 0 60px rgba(60, 0, 20, 0.35);
+    box-shadow: 0 0 22px rgba(120,0,40,.45), 0 0 60px rgba(60,0,20,.35);
+    z-index: 1;
   }
 
   #name{
-    position: absolute;
-    left: var(--pad-left);
-    top: 50%;
+    position:absolute;
+    top:50%;
     transform: translate3d(0, -50%, 0);
     height: var(--carpet-h);
     display:flex;
     align-items:center;
 
-    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
-    font-weight: 900;
-    font-style: italic;
+    font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight:900;
+    font-style:italic;
     font-size: var(--name-size);
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    letter-spacing:2px;
+    text-transform:uppercase;
     color: var(--gold);
 
-    white-space: nowrap;
-    overflow: hidden;
-    z-index: 4;
+    white-space:nowrap;
+    overflow: visible;
+    z-index: 2;
+  }
+
+  .small-name{
+    font-size: calc(var(--name-size) * 0.8);
   }
 
   #scanner{
-    position: absolute;
-    top: 50%;
+    position:absolute;
+    top:50%;
     transform: translate3d(0, -50%, 0);
-    z-index: 5;
+    z-index: 3;
     pointer-events:none;
+    overflow: visible;
+    left: 0;
   }
 
   #heart{
     height: calc(var(--heart-h) * var(--heart-scale));
-    width: auto;
+    width:auto;
     display:block;
   }
 
@@ -156,12 +182,12 @@
     top:-99999px;
     visibility:hidden;
     white-space:nowrap;
-    font-family: "OverlayFont","Segoe UI",Arial,sans-serif;
-    font-weight: 900;
-    font-style: italic;
+    font-family:"OverlayFont","Segoe UI",Arial,sans-serif;
+    font-weight:900;
+    font-style:italic;
     font-size: var(--name-size);
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    letter-spacing:2px;
+    text-transform:uppercase;
   }
 </style>
 </head>
@@ -169,14 +195,17 @@
 <body>
   <div id="wrap">
     <div id="frame">
-      <div id="title">TOP MEMBERS</div>
+      <div id="design">
+        <div id="title">TOP MEMBERS</div>
 
-      <div id="stage">
-        <div id="rotator">
-          <div id="carpet"></div>
-          <div id="name">POPEVA - 46</div>
-          <div id="scanner">
-            <img id="heart" src="images/top.png" alt="icon">
+        <div id="stage">
+          <div id="rotator">
+            <div id="scanner">
+              <img id="heart" src="images/top.png" alt="icon">
+            </div>
+
+            <div id="carpet"></div>
+            <div id="name">POPEVA - 46</div>
           </div>
         </div>
       </div>
@@ -202,21 +231,29 @@
   const heart   = document.getElementById("heart");
   const nameEl  = document.getElementById("name");
   const scanner = document.getElementById("scanner");
+  const carpetEl= document.getElementById("carpet");
+  const stageEl = document.getElementById("stage");
   const meas    = document.getElementById("measure");
+  const css     = document.documentElement.style;
 
-  const css = document.documentElement.style;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   function pxVar(name){
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return parseFloat(v) || 0;
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+  }
+
+  function applyUIScale(){
+    const designW = pxVar("--design-w");
+    const vw = Math.max(1, window.innerWidth || 1);
+    const scale = Math.max(0.5, Math.min(1.0, vw / designW));
+    css.setProperty("--ui-scale", String(scale));
   }
 
   function scaleFor(src){
     const TOP = 1.05;
     const MID = TOP * 0.80;
     const LOW = MID * 0.85;
-    const s = src.toLowerCase();
+    const s = (src || "").toLowerCase();
     if (s.includes("top.png")) return TOP;
     if (s.includes("mid.png")) return MID;
     if (s.includes("low.png")) return LOW;
@@ -226,65 +263,21 @@
   async function getImageNatural(path){
     return new Promise(res=>{
       const img = new Image();
-      img.onload = () => res({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
+      img.onload  = () => res({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
       img.onerror = () => res({ w: 1, h: 1 });
       img.src = path;
     });
   }
 
-  function textWidth(text){
+  function measureTextWidth(text){
     meas.textContent = text;
     return Math.ceil(meas.getBoundingClientRect().width);
   }
 
-  async function computeSizes(){
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-
-    const padLeft  = pxVar("--pad-left");
-    const padRight = pxVar("--pad-right");
-    const heartH   = pxVar("--heart-h");
-    const nudgeR   = pxVar("--icon-nudge-right");
-
-    let maxTextW = 0;
-    for (const p of pages){
-      maxTextW = Math.max(maxTextW, textWidth(p.text));
-    }
-
-    let maxIconW = 0;
-    for (const p of pages){
-      const nat = await getImageNatural(p.img);
-      const scale = scaleFor(p.img);
-      const displayW = nat.w * ((heartH * scale) / nat.h);
-      maxIconW = Math.max(maxIconW, displayW);
-    }
-    maxIconW = Math.ceil(maxIconW);
-
-    const reserved = maxIconW + padRight + nudgeR;
-    const carpetW = Math.ceil(padLeft + maxTextW + 50 + reserved);
-    const stageW  = Math.ceil(carpetW + maxIconW + nudgeR);
-
-    css.setProperty("--carpet-w", carpetW + "px");
-    css.setProperty("--stage-w", stageW + "px");
-
-    nameEl.style.width = Math.max(0, carpetW - padLeft - reserved) + "px";
-  }
-
-  async function positionIconForCurrent(){
-    const nudgeR  = pxVar("--icon-nudge-right");
-    const carpetW = pxVar("--carpet-w");
-    const heartH  = pxVar("--heart-h");
-
-    const scale = scaleFor(heart.src);
-    css.setProperty("--heart-scale", String(scale));
-
-    const nat = await getImageNatural(heart.src);
-    const curW = Math.ceil(nat.w * ((heartH * scale) / nat.h));
-
-    /* 🔥 ONLY CHANGE: push PNGs a bit more right to fully cover carpet edge */
-    const COVER = 18;
-    const left = Math.ceil(carpetW - curW + nudgeR + COVER);
-
-    scanner.style.left = left + "px";
+  function applySmallNameClassFor(text){
+    const isSmall = text.includes("GHOST RIDER") || text.includes("VLADI13_12");
+    nameEl.classList.toggle("small-name", isSmall);
+    meas.classList.toggle("small-name", isSmall);
   }
 
   async function setHeart(src){
@@ -295,10 +288,41 @@
     });
   }
 
+  async function positionLayoutForCurrent(text){
+    const inset   = pxVar("--text-inset");
+    const gapAfter= pxVar("--gap-after-icon");
+    const nudgeL  = pxVar("--icon-nudge-left");
+    const heartH  = pxVar("--heart-h");
+
+    const scale = scaleFor(heart.src);
+    css.setProperty("--heart-scale", String(scale));
+
+    const nat = await getImageNatural(heart.src);
+    const iconW = Math.ceil(nat.w * ((heartH * scale) / nat.h));
+
+    scanner.style.left = "0px";
+
+    const carpetLeft = Math.ceil(iconW + gapAfter - Math.max(0, nudgeL));
+
+    const textW = measureTextWidth(text);
+    const carpetW = Math.ceil(textW + inset + inset);
+
+    carpetEl.style.left = carpetLeft + "px";
+    carpetEl.style.width = carpetW + "px";
+
+    nameEl.style.left = (carpetLeft + inset) + "px";
+    nameEl.style.width = textW + "px";
+
+    stageEl.style.width = (carpetLeft + carpetW) + "px";
+  }
+
   async function showPage(p){
+    applySmallNameClassFor(p.text);
     nameEl.textContent = p.text;
+
     await setHeart(p.img);
-    await positionIconForCurrent();
+    await positionLayoutForCurrent(p.text);
+
     rotator.classList.remove("out");
     await sleep(PAGE_MS);
   }
@@ -306,8 +330,8 @@
   let idx = 0;
 
   async function cycle(){
-    await computeSizes();
-    await positionIconForCurrent();
+    applyUIScale();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
 
     while(true){
       await showPage(pages[idx]);
@@ -318,12 +342,14 @@
   }
 
   window.addEventListener("resize", async ()=>{
-    await computeSizes();
-    await positionIconForCurrent();
+    applyUIScale();
+    const p = pages[idx];
+    applySmallNameClassFor(p.text);
+    await positionLayoutForCurrent(p.text);
   }, { passive:true });
 
+  setTimeout(applyUIScale, 250);
   cycle();
 </script>
 </body>
 </html>
-
